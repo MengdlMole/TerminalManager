@@ -35,9 +35,10 @@ jobs:
         if: failure() && steps.terminal-tests.outcome == 'failure'
         shell: python
         run: |
-          import os
+          import os, re
           from pathlib import Path
-          text = (Path(os.environ['RUNNER_TEMP']) / 'terminal-tests.log').read_text(encoding='utf-8', errors='replace')[-12000:]
+          text = (Path(os.environ['RUNNER_TEMP']) / 'terminal-tests.log').read_text(encoding='utf-8', errors='replace')
+          text = re.sub(r'\x1b\[[0-9;]*m', '', text)[-3000:]
           text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
           print('::error title=Terminal test failure::' + text)
       - run: cargo build --manifest-path src-tauri/Cargo.toml --release --bins --features custom-protocol
