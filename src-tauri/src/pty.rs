@@ -415,10 +415,19 @@ mod tests {
             .exited
             .load(Ordering::Acquire));
         terminals.close_all();
-        assert!(first_received, "first PTY did not emit its UTF-8 marker");
+        assert!(
+            first_received,
+            "first PTY did not emit its UTF-8 marker: {:?}",
+            outputs
+                .get("first")
+                .map(|bytes| String::from_utf8_lossy(bytes))
+        );
         assert!(
             second_received,
-            "second PTY did not emit its independent marker"
+            "second PTY did not emit its independent marker: {:?}",
+            outputs
+                .get("second")
+                .map(|bytes| String::from_utf8_lossy(bytes))
         );
     }
 }
