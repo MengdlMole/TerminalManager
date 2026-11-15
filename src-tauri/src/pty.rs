@@ -348,7 +348,7 @@ mod tests {
                         id: id.into(),
                         logical_id: id.into(),
                         cwd: "~".into(),
-                        shell: String::new(),
+                        shell: if cfg!(windows) { "cmd.exe" } else { "/bin/sh" }.into(),
                         cols: 80,
                         rows: 24,
                     },
@@ -361,33 +361,52 @@ mod tests {
                 )
                 .unwrap();
         }
+        // Split tokens in the input so an echoed command cannot satisfy the assertion.
+        // cmd.exe avoids the terminal cursor-report handshake used by PSReadLine.
+        let (first_command, second_command) = if cfg!(windows) {
+            (
+                "chcp 65001 >nul\rset TM_TEST_PREFIX=TM_\rset TM_TEST_SUFFIX=中文_1\recho %TM_TEST_PREFIX%%TM_TEST_SUFFIX%\r",
+                "set TM_TEST_PREFIX=TM_\rset TM_TEST_SUFFIX=second_2\recho %TM_TEST_PREFIX%%TM_TEST_SUFFIX%\r",
+            )
+        } else {
+            (
+                "printf '\\nTM_%s\\n' '中文_1'\r",
+                "printf '\\nTM_%s\\n' 'second_2'\r",
+            )
+        };
         terminals
             .get("first")
             .unwrap()
-            .write("printf '\\nTM_中文_1\\n'\r".as_bytes())
+            .write(first_command.as_bytes())
             .unwrap();
         terminals
             .get("second")
             .unwrap()
-            .write(b"printf '\\nTM_second_2\\n'\r")
+            .write(second_command.as_bytes())
             .unwrap();
         let mut outputs = HashMap::<String, Vec<u8>>::new();
-        let deadline = std::time::Instant::now() + Duration::from_secs(10);
+        let deadline = std::time::Instant::now() + Duration::from_secs(30);
         while std::time::Instant::now() < deadline {
-            let (id, data) = rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            let Ok((id, data)) = rx.recv_timeout(Duration::from_millis(250)) else {
+                continue;
+            };
             outputs.entry(id).or_default().extend(data);
             if outputs
                 .get("first")
-                .is_some_and(|b| String::from_utf8_lossy(b).contains("\r\nTM_中文_1\r\n"))
+                .is_some_and(|b| String::from_utf8_lossy(b).contains("TM_中文_1"))
                 && outputs
                     .get("second")
-                    .is_some_and(|b| String::from_utf8_lossy(b).contains("\r\nTM_second_2\r\n"))
+                    .is_some_and(|b| String::from_utf8_lossy(b).contains("TM_second_2"))
             {
                 break;
             }
         }
-        assert!(String::from_utf8_lossy(&outputs["first"]).contains("TM_中文_1"));
-        assert!(String::from_utf8_lossy(&outputs["second"]).contains("TM_second_2"));
+        let first_received = outputs
+            .get("first")
+            .is_some_and(|b| String::from_utf8_lossy(b).contains("TM_中文_1"));
+        let second_received = outputs
+            .get("second")
+            .is_some_and(|b| String::from_utf8_lossy(b).contains("TM_second_2"));
         terminals.get("first").unwrap().resize(120, 40).unwrap();
         terminals.close("first");
         assert!(!terminals
@@ -396,5 +415,10 @@ mod tests {
             .exited
             .load(Ordering::Acquire));
         terminals.close_all();
+        assert!(first_received, "first PTY did not emit its UTF-8 marker");
+        assert!(
+            second_received,
+            "second PTY did not emit its independent marker"
+        );
     }
 }

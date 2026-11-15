@@ -55,6 +55,8 @@ npm run tauri -- build --bundles app
 
 构建结果位于 `src-tauri/target/release/bundle/`。应用运行不依赖 Node.js 或 Rust；Linux 仍需系统 WebKitGTK，Windows 需 WebView2。Windows、macOS、Linux 原生包应分别在对应系统构建；CI 已提供三平台检查矩阵。
 
+推送 `v*` 版本标签还会触发自动发布构建：生成 Windows x64、macOS ARM64 / Intel、Linux x64 安装包与 CLI，全部成功后创建 Release 草稿，不会自动公开发布。详见 [发布流程](docs/RELEASING.md)。
+
 ## CLI
 
 先启动桌面应用，再构建 CLI：
