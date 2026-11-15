@@ -342,6 +342,8 @@ mod tests {
         for id in ["first", "second"] {
             let tx = tx.clone();
             let t = terminals.clone();
+            #[cfg(windows)]
+            let cursor_query = Mutex::new(Vec::<u8>::new());
             terminals
                 .spawn(
                     SpawnOptions {
@@ -353,8 +355,21 @@ mod tests {
                         rows: 24,
                     },
                     move |data| {
+                        let session = t.get(id)?;
+                        // ConPTY inherits the cursor and waits for the terminal emulator's
+                        // response. xterm handles this in the app; emulate it in this test.
+                        #[cfg(windows)]
+                        {
+                            let mut pending = cursor_query.lock().unwrap();
+                            pending.extend_from_slice(&data);
+                            for _ in 0..pending.windows(4).filter(|w| *w == b"\x1b[6n").count() {
+                                session.write(b"\x1b[1;1R")?;
+                            }
+                            let keep = pending.len().saturating_sub(3);
+                            pending.drain(..keep);
+                        }
                         let _ = tx.send((id.to_string(), data.clone()));
-                        t.get(id)?.flow.ack(data.len());
+                        session.flow.ack(data.len());
                         Ok(())
                     },
                     |_, _| {},
