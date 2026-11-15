@@ -1,0 +1,186 @@
+{
+  "platform": "Darwin",
+  "measurements": [
+    {
+      "terminals": 0,
+      "appAndWebKitRssMiB": 169.4,
+      "appAndWebKitCpuPercent": 0.97,
+      "shellRssMiB": 0.0,
+      "processes": [
+        {
+          "pid": 50124,
+          "ppid": 50101,
+          "rssKiB": 73536,
+          "cpuSeconds": 0.14,
+          "name": "/Users/mengdlmole/01.Code/03.Repo/01.JustDoIt/Tools/TerminalManager/src-tauri/target/release/bundle/macos/Terminal Manager.app/Contents/MacOS/terminal-manager"
+        },
+        {
+          "pid": 50125,
+          "ppid": 1,
+          "rssKiB": 39408,
+          "cpuSeconds": 0.05,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU"
+        },
+        {
+          "pid": 50126,
+          "ppid": 1,
+          "rssKiB": 44912,
+          "cpuSeconds": 0.16,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent"
+        },
+        {
+          "pid": 50127,
+          "ppid": 1,
+          "rssKiB": 15600,
+          "cpuSeconds": 0.02,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking"
+        }
+      ]
+    },
+    {
+      "terminals": 1,
+      "appAndWebKitRssMiB": 268.2,
+      "appAndWebKitCpuPercent": 0.97,
+      "shellRssMiB": 2.2,
+      "processes": [
+        {
+          "pid": 50124,
+          "ppid": 50101,
+          "rssKiB": 80416,
+          "cpuSeconds": 0.52,
+          "name": "/Users/mengdlmole/01.Code/03.Repo/01.JustDoIt/Tools/TerminalManager/src-tauri/target/release/bundle/macos/Terminal Manager.app/Contents/MacOS/terminal-manager"
+        },
+        {
+          "pid": 50125,
+          "ppid": 1,
+          "rssKiB": 42560,
+          "cpuSeconds": 0.11,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU"
+        },
+        {
+          "pid": 50126,
+          "ppid": 1,
+          "rssKiB": 135504,
+          "cpuSeconds": 0.75,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent"
+        },
+        {
+          "pid": 50127,
+          "ppid": 1,
+          "rssKiB": 16144,
+          "cpuSeconds": 0.04,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking"
+        }
+      ]
+    },
+    {
+      "terminals": 10,
+      "appAndWebKitRssMiB": 273.5,
+      "appAndWebKitCpuPercent": 0.97,
+      "shellRssMiB": 20.0,
+      "processes": [
+        {
+          "pid": 50124,
+          "ppid": 50101,
+          "rssKiB": 81408,
+          "cpuSeconds": 0.58,
+          "name": "/Users/mengdlmole/01.Code/03.Repo/01.JustDoIt/Tools/TerminalManager/src-tauri/target/release/bundle/macos/Terminal Manager.app/Contents/MacOS/terminal-manager"
+        },
+        {
+          "pid": 50125,
+          "ppid": 1,
+          "rssKiB": 43072,
+          "cpuSeconds": 0.12,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU"
+        },
+        {
+          "pid": 50126,
+          "ppid": 1,
+          "rssKiB": 139328,
+          "cpuSeconds": 0.88,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent"
+        },
+        {
+          "pid": 50127,
+          "ppid": 1,
+          "rssKiB": 16208,
+          "cpuSeconds": 0.05,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking"
+        }
+      ]
+    },
+    {
+      "terminals": 30,
+      "appAndWebKitRssMiB": 306.8,
+      "appAndWebKitCpuPercent": 2.9,
+      "shellRssMiB": 59.3,
+      "processes": [
+        {
+          "pid": 50124,
+          "ppid": 50101,
+          "rssKiB": 82176,
+          "cpuSeconds": 0.7,
+          "name": "/Users/mengdlmole/01.Code/03.Repo/01.JustDoIt/Tools/TerminalManager/src-tauri/target/release/bundle/macos/Terminal Manager.app/Contents/MacOS/terminal-manager"
+        },
+        {
+          "pid": 50125,
+          "ppid": 1,
+          "rssKiB": 43344,
+          "cpuSeconds": 0.16,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU"
+        },
+        {
+          "pid": 50126,
+          "ppid": 1,
+          "rssKiB": 172400,
+          "cpuSeconds": 1.28,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent"
+        },
+        {
+          "pid": 50127,
+          "ppid": 1,
+          "rssKiB": 16240,
+          "cpuSeconds": 0.06,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking"
+        }
+      ]
+    },
+    {
+      "terminals": 0,
+      "appAndWebKitRssMiB": 324.8,
+      "appAndWebKitCpuPercent": 0.97,
+      "shellRssMiB": 0.0,
+      "processes": [
+        {
+          "pid": 50124,
+          "ppid": 50101,
+          "rssKiB": 81696,
+          "cpuSeconds": 0.76,
+          "name": "/Users/mengdlmole/01.Code/03.Repo/01.JustDoIt/Tools/TerminalManager/src-tauri/target/release/bundle/macos/Terminal Manager.app/Contents/MacOS/terminal-manager"
+        },
+        {
+          "pid": 50125,
+          "ppid": 1,
+          "rssKiB": 43696,
+          "cpuSeconds": 0.19,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU"
+        },
+        {
+          "pid": 50126,
+          "ppid": 1,
+          "rssKiB": 190816,
+          "cpuSeconds": 1.48,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent"
+        },
+        {
+          "pid": 50127,
+          "ppid": 1,
+          "rssKiB": 16336,
+          "cpuSeconds": 0.08,
+          "name": "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking"
+        }
+      ]
+    }
+  ],
+  "notes": "Release build; RSS includes main + newly created WebKit helpers, excludes shells. RSS sums may double-count shared pages. Idle CPU uses CPU-time deltas over 2 seconds after 1 second settling, not a long-duration benchmark. 1-terminal sample includes prior high-output history. WebView allocation/cache need not return RSS immediately after closing terminals."
+}
