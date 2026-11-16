@@ -12,6 +12,7 @@ Rust + Tauri 2 + 原生系统 WebView + TypeScript + xterm.js + portable-pty。�
 - 系统 Shell 配置、提示符、历史、Tab 补全、Ctrl+C、全屏终端程序、中文输入。
 - 工作目录与 Shell 可单独指定；Windows 默认优先 PowerShell 7，未安装时用 Windows PowerShell；也可以指定 `cmd.exe` 或 `wsl.exe`。
 - 终端内查找、字号和历史行数设置、关闭运行中终端前确认。
+- 拖动侧栏右边缘调整宽度并自动记住；双击恢复默认，也支持方向键调整。
 - 本地 CLI `tmctl`：创建、列出、切换、重命名、分组、标签、发送文本和关闭。
 - 配置自动写入本地 JSON。重开应用保留终端定义，手动启动新的 Shell；**不恢复退出前的运行进程或输出历史**。
 

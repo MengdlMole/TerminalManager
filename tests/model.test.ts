@@ -1,8 +1,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultGroup, directoriesFor, emptyWorkspace, normalizeWorkspace, matches, removeGroup, resolveTerminal, tagsFrom, updateGroup } from '../src/model.ts';
+import { constrainSidebarWidth, defaultGroup, defaultSidebarWidth, directoriesFor, emptyWorkspace, normalizeWorkspace, matches, removeGroup, resolveTerminal, tagsFrom, updateGroup } from '../src/model.ts';
 
 const terminal = { id: 'abcdef-123', name: '后端开发', group: '工作', tags: ['urgent', 'API'], cwd: '/tmp/project', shell: '/bin/zsh' };
+
+test('sidebar preference survives reload, validates saved values and adapts to smaller windows', () => {
+  const workspace = normalizeWorkspace({ ...emptyWorkspace(), sidebarWidth: 480 });
+  assert.equal(constrainSidebarWidth(workspace.sidebarWidth, 760), 400);
+  const restored = normalizeWorkspace(JSON.parse(JSON.stringify(workspace)));
+  assert.equal(restored.sidebarWidth, 480);
+  assert.equal(constrainSidebarWidth(restored.sidebarWidth, 1200), 480);
+  assert.equal(normalizeWorkspace({ version: 1, terminals: [] }).sidebarWidth, defaultSidebarWidth);
+  for (const width of [null, 'wide', NaN, Infinity]) {
+    assert.equal(normalizeWorkspace({ ...emptyWorkspace(), sidebarWidth: width }).sidebarWidth, defaultSidebarWidth);
+  }
+  assert.equal(normalizeWorkspace({ ...emptyWorkspace(), sidebarWidth: -100 }).sidebarWidth, 220);
+  assert.equal(normalizeWorkspace({ ...emptyWorkspace(), sidebarWidth: 99999 }).sidebarWidth, 520);
+});
 
 test('search combines group, directory, tags and name with case-insensitive AND terms', () => {
   assert.equal(matches(terminal, '后端 api'), true);

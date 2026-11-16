@@ -16,12 +16,22 @@ export interface Workspace {
   activeId: string | null;
   fontSize: number;
   scrollback: number;
+  sidebarWidth: number;
 }
 
 export const defaultGroup = '默认分组';
+export const defaultSidebarWidth = 270;
+export const minSidebarWidth = 220;
+export const maxSidebarWidth = 520;
+
+export function constrainSidebarWidth(value: unknown, windowWidth = Infinity): number {
+  const width = typeof value === 'number' && Number.isFinite(value) ? value : defaultSidebarWidth;
+  const maximum = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, windowWidth - 360));
+  return Math.round(Math.max(minSidebarWidth, Math.min(maximum, width)));
+}
 export const emptyWorkspace = (): Workspace => ({
   version: 1, terminals: [], groups: [defaultGroup], groupDirectories: { [defaultGroup]: [] }, collapsed: [], activeId: null,
-  fontSize: 14, scrollback: 3000,
+  fontSize: 14, scrollback: 3000, sidebarWidth: defaultSidebarWidth,
 });
 
 export function tagsFrom(input: string | string[]): string[] {
@@ -94,6 +104,7 @@ export function normalizeWorkspace(input: unknown): Workspace {
   workspace.activeId = typeof value.activeId === 'string' && ids.has(value.activeId) ? value.activeId : workspace.terminals[0]?.id ?? null;
   if (typeof value.fontSize === 'number') workspace.fontSize = Math.min(24, Math.max(10, value.fontSize));
   if (typeof value.scrollback === 'number') workspace.scrollback = Math.min(10000, Math.max(500, Math.round(value.scrollback)));
+  workspace.sidebarWidth = constrainSidebarWidth(value.sidebarWidth);
   return workspace;
 }
 

@@ -8,6 +8,7 @@ import './style.css';
 import { defaultGroup, directoriesFor, emptyWorkspace, matches, normalizeWorkspace, removeGroup, resolveTerminal, tagsFrom, updateGroup, type TerminalDefinition } from './model';
 import { icon } from './icons';
 import { combobox } from './combobox';
+import { resizableSidebar } from './sidebar';
 
 type Status = 'starting' | 'running' | 'exited' | 'error';
 interface Runtime {
@@ -43,6 +44,7 @@ root.innerHTML = `
     <div class="section-label"><span>工作空间</span><button class="icon-button" id="new-group" title="新建分组" aria-label="新建分组">${icon('plus')}</button></div>
     <nav id="terminal-list" aria-label="终端列表"></nav>
     <div class="sidebar-footer"><span class="local-dot"></span><span>仅在本机运行</span><button class="icon-button" id="settings" title="设置与快捷键" aria-label="设置与快捷键">${icon('settings')}</button></div>
+    <div id="sidebar-resizer" role="separator" tabindex="0" aria-label="调整侧栏宽度" aria-orientation="vertical" aria-controls="terminal-list" title="拖动调整侧栏宽度；双击恢复默认。支持左右方向键，Enter 恢复默认。"></div>
   </aside>
   <main class="main">
     <header id="terminal-header"></header>
@@ -60,6 +62,10 @@ const area = $('terminal-area');
 const empty = $('empty-state');
 const modal = $<HTMLDialogElement>('modal');
 const form = $<HTMLFormElement>('modal-form');
+const sidebarLayout = resizableSidebar(root, $('sidebar-resizer'), {
+  read: () => workspace.sidebarWidth,
+  commit: width => { workspace.sidebarWidth = width; persist(); },
+});
 
 function textElement(tag: string, className: string, text: string): HTMLElement {
   const node = document.createElement(tag); node.className = className; node.textContent = text; return node;
@@ -528,7 +534,7 @@ async function initialize(): Promise<void> {
     });
     await invoke('frontend_ready');
   }
-  renderList(); renderHeader(); renderEmpty();
+  sidebarLayout.refresh(); renderList(); renderHeader(); renderEmpty();
   if (!isTauri()) notify('界面预览模式 · 运行 npm run desktop 使用真实终端');
 }
 void initialize().catch(notify);
