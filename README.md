@@ -8,6 +8,7 @@ Rust + Tauri 2 + 原生系统 WebView + TypeScript + xterm.js + portable-pty。�
 
 - 多个独立真实 PTY / ConPTY，后台终端持续运行；切换时保留终端画面、输入状态与历史。
 - 分组、重命名、多标签、名称/目录/标签搜索，后台新输出标记和响铃标记。
+- 每个分组可保存多个常用工作目录，新建终端时下拉选择；分组栏支持一键清空和未分组终端。
 - 系统 Shell 配置、提示符、历史、Tab 补全、Ctrl+C、全屏终端程序、中文输入。
 - 工作目录与 Shell 可单独指定；Windows 默认优先 PowerShell 7，未安装时用 Windows PowerShell；也可以指定 `cmd.exe` 或 `wsl.exe`。
 - 终端内查找、字号和历史行数设置、关闭运行中终端前确认。
@@ -56,6 +57,12 @@ npm run tauri -- build --bundles app
 构建结果位于 `src-tauri/target/release/bundle/`。应用运行不依赖 Node.js 或 Rust；Linux 仍需系统 WebKitGTK，Windows 需 WebView2。Windows、macOS、Linux 原生包应分别在对应系统构建；CI 已提供三平台检查矩阵。
 
 推送 `v*` 版本标签还会触发自动发布构建：生成 Windows x64、macOS ARM64 / Intel、Linux x64 安装包与 CLI，全部成功后创建 Release 草稿，不会自动公开发布。详见 [发布流程](docs/RELEASING.md)。
+
+## 分组与工作目录
+
+在侧栏分组标题上点击编辑图标，可添加、修改或移除常用工作目录（每组最多 32 个，默认分组也支持）。重命名分组会保留目录和终端归属。
+
+新建或编辑终端时，工作目录下拉框会列出所选分组保存的目录，同时显示目录名和完整路径，也支持手动输入其他路径。分组栏的 × 可清空当前分组，留空创建的终端显示在「未分组」下。下拉框支持输入筛选、方向键选择、Enter 确认、Escape 关闭。
 
 ## CLI
 

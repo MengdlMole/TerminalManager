@@ -5,8 +5,9 @@ import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
 import '@xterm/xterm/css/xterm.css';
 import './style.css';
-import { defaultGroup, emptyWorkspace, matches, normalizeWorkspace, resolveTerminal, tagsFrom, type TerminalDefinition } from './model';
+import { defaultGroup, directoriesFor, emptyWorkspace, matches, normalizeWorkspace, resolveTerminal, tagsFrom, updateGroup, type TerminalDefinition } from './model';
 import { icon } from './icons';
+import { combobox } from './combobox';
 
 type Status = 'starting' | 'running' | 'exited' | 'error';
 interface Runtime {
@@ -90,7 +91,8 @@ function activeDefinition(): TerminalDefinition | undefined { return workspace.t
 
 function renderList(): void {
   const fragment = document.createDocumentFragment();
-  for (const group of workspace.groups) {
+  const groups = workspace.terminals.some(t => !t.group) ? ['', ...workspace.groups] : workspace.groups;
+  for (const group of groups) {
     const terminals = workspace.terminals.filter(t => t.group === group && matches(t, query));
     if (query && !terminals.length) continue;
     const section = document.createElement('section'); section.className = 'group';
@@ -99,10 +101,10 @@ function renderList(): void {
     const collapsed = workspace.collapsed.includes(group) && !query;
     toggle.setAttribute('aria-expanded', String(!collapsed));
     toggle.innerHTML = `<span class="chevron ${collapsed ? '' : 'expanded'}">${icon('chevron')}</span>${icon('folder')}`;
-    toggle.append(textElement('span', 'group-name', group), textElement('span', 'group-count', String(terminals.length)));
+    toggle.append(textElement('span', 'group-name', group || '未分组'), textElement('span', 'group-count', String(terminals.length)));
     toggle.onclick = () => { workspace.collapsed = collapsed ? workspace.collapsed.filter(g => g !== group) : [...workspace.collapsed, group]; persist(); renderList(); };
     heading.append(toggle, button('在此分组新建终端', 'plus', () => terminalDialog(undefined, group)));
-    if (group !== defaultGroup) heading.append(button('编辑分组', 'edit', () => groupDialog(group)));
+    if (group) heading.append(button(`编辑分组：${group}`, 'edit', () => groupDialog(group)));
     section.append(heading);
     if (!collapsed) {
       for (const definition of terminals) {
@@ -120,7 +122,10 @@ function renderList(): void {
         row.append(select, button('编辑终端', 'edit', () => terminalDialog(definition)), button('关闭终端', 'close', () => void confirmClose(definition)));
         section.append(row);
       }
-      if (!terminals.length) section.append(textElement('div', 'group-empty', '还没有终端'));
+      if (!terminals.length) {
+        const count = directoriesFor(workspace, group).length;
+        section.append(textElement('div', 'group-empty', `还没有终端${count ? ` · ${count} 个工作目录` : ''}`));
+      }
     }
     fragment.append(section);
   }
@@ -135,7 +140,7 @@ function renderHeader(): void {
   if (!definition) { header.append(textElement('span', 'header-breadcrumb', '工作空间')); return; }
   const names = document.createElement('div'); names.className = 'header-names';
   const line = document.createElement('div'); line.className = 'header-line';
-  line.append(textElement('span', 'header-group', definition.group), textElement('span', 'header-slash', '/'), textElement('strong', '', definition.name));
+  line.append(textElement('span', 'header-group', definition.group || '未分组'), textElement('span', 'header-slash', '/'), textElement('strong', '', definition.name));
   for (const tag of definition.tags) line.append(textElement('span', 'tag', tag));
   names.append(line, textElement('div', 'header-path', definition.cwd));
   const actions = document.createElement('div'); actions.className = 'header-actions';
@@ -323,16 +328,16 @@ function terminalDialog(definition?: TerminalDefinition, group?: string, copy?: 
   openModal(`
     <div class="modal-heading"><span class="modal-icon">${icon('terminal')}</span><h2>${definition ? '编辑终端' : '新建终端'}</h2><button type="button" class="icon-button" data-cancel aria-label="取消">${icon('close')}</button></div>
     <label>名称<input name="name" required maxlength="120" autocomplete="off" placeholder="例如：后端开发"/></label>
-    <div class="form-columns"><label>分组<input name="group" list="group-options" required maxlength="80"/><datalist id="group-options"></datalist></label><label>标签<span class="optional">逗号分隔</span><input name="tags" placeholder="工作, 调试"/></label></div>
-    <label>工作目录<input name="cwd" required autocomplete="off" spellcheck="false"/></label>
+    <div class="form-columns"><div class="form-field"><label for="terminal-group">分组<span class="optional">可清空</span></label><div id="group-picker"></div><span class="field-hint">留空则不分组，也可输入新分组</span></div><label>标签<span class="optional">逗号分隔</span><input name="tags" placeholder="工作, 调试"/></label></div>
+    <div class="form-field"><label for="terminal-cwd">工作目录</label><div id="cwd-picker" class="path-picker"></div><span class="field-hint" id="cwd-hint"></span></div>
     <label>Shell<span class="optional">可执行文件路径，不包含参数</span><input name="shell" placeholder="使用系统默认 Shell" autocomplete="off" spellcheck="false"/></label>
     <p class="form-hint">使用真实交互式 Shell，加载你已有的配置、提示符和补全。${definition && runtimes.has(definition.id) ? '目录和 Shell 修改将在下次启动生效。' : ''}</p>
     <div class="form-error" role="alert"></div><div class="modal-actions"><button type="button" class="secondary" data-cancel>取消</button><button type="submit" class="primary">${definition ? '保存修改' : '创建并启动'}</button></div>`,
     async data => {
-      const values = { name: String(data.get('name')).trim(), group: String(data.get('group')).trim() || defaultGroup,
+      const values = { name: String(data.get('name')).trim(), group: String(data.get('group')).trim(),
         tags: tagsFrom(String(data.get('tags'))), cwd: String(data.get('cwd')).trim(), shell: String(data.get('shell')).trim() };
       if (!values.name) throw new Error('请输入终端名称');
-      if (!workspace.groups.includes(values.group)) workspace.groups.push(values.group);
+      if (values.group && !workspace.groups.includes(values.group)) workspace.groups.push(values.group);
       if (definition) { Object.assign(definition, values); renderList(); renderHeader(); persist(); }
       else {
         if (workspace.terminals.length >= 128) throw new Error('最多保留 128 个终端');
@@ -344,25 +349,58 @@ function terminalDialog(definition?: TerminalDefinition, group?: string, copy?: 
     });
   const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement;
   field('name').value = definition?.name ?? (copy ? `${copy.name} 副本` : `Terminal ${workspace.terminals.length + 1}`);
-  field('group').value = group ?? source?.group ?? activeDefinition()?.group ?? defaultGroup;
+  let selectedGroup = group ?? source?.group ?? activeDefinition()?.group ?? defaultGroup;
+  const cwdPicker = combobox($('cwd-picker'), {
+    id: 'terminal-cwd', name: 'cwd', label: '工作目录', required: true,
+    value: source?.cwd ?? directoriesFor(workspace, selectedGroup)[0] ?? defaults.cwd,
+    placeholder: '选择已保存的目录，或输入路径',
+    choices: () => directoriesFor(workspace, selectedGroup).map(path => ({ value: path,
+      label: path.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || path, description: path })),
+    emptyMessage: '没有匹配的已保存目录，可直接输入路径',
+  });
+  const updateDirectoryChoices = () => {
+    const count = directoriesFor(workspace, selectedGroup).length;
+    $('cwd-hint').textContent = count ? `此分组有 ${count} 个工作目录，可下拉选择或手动输入` : '可手动输入路径；在「编辑分组」中添加常用工作目录';
+    cwdPicker.refresh();
+  };
+  combobox($('group-picker'), {
+    id: 'terminal-group', name: 'group', label: '分组', value: selectedGroup, maxLength: 80, clearable: true,
+    placeholder: '未分组', emptyMessage: '没有匹配的分组，将使用输入的名称创建',
+    choices: () => [{ value: '', label: '未分组', description: '不加入任何分组' }, ...workspace.groups.map(name => ({ value: name,
+      description: `${directoriesFor(workspace, name).length} 个工作目录` }))],
+    onChange: value => { selectedGroup = value.trim(); updateDirectoryChoices(); },
+  });
+  updateDirectoryChoices();
   field('tags').value = source?.tags.join(', ') ?? '';
-  field('cwd').value = source?.cwd ?? defaults.cwd;
   field('shell').value = source?.shell ?? defaults.shell;
-  for (const groupName of workspace.groups) { const option = document.createElement('option'); option.value = groupName; $('group-options').append(option); }
   field('name').focus(); field('name').select();
 }
 
 function groupDialog(existing?: string): void {
-  openModal(`<div class="modal-heading"><h2>${existing ? '编辑分组' : '新建分组'}</h2></div><label>分组名称<input name="name" required maxlength="80" autocomplete="off"/></label><div class="form-error" role="alert"></div><div class="modal-actions"><button type="button" class="secondary" data-cancel>取消</button><button type="submit" class="primary">保存分组</button></div>`, data => {
-    const name = String(data.get('name')).trim(); if (!name) throw new Error('请输入名称');
-    if (name !== existing && workspace.groups.includes(name)) throw new Error('分组已存在');
-    if (existing) {
-      workspace.groups = workspace.groups.map(g => g === existing ? name : g);
-      workspace.terminals.filter(t => t.group === existing).forEach(t => { t.group = name; });
-      workspace.collapsed = workspace.collapsed.map(g => g === existing ? name : g);
-    } else workspace.groups.push(name);
+  openModal(`<div class="modal-heading"><span class="modal-icon">${icon('folder')}</span><h2>${existing ? '编辑分组' : '新建分组'}</h2><button type="button" class="icon-button" data-cancel aria-label="取消">${icon('close')}</button></div>
+    <label>分组名称<input name="name" required maxlength="80" autocomplete="off" ${existing === defaultGroup ? 'readonly' : ''}/></label>
+    <fieldset class="directory-editor"><legend>工作目录<span class="optional-inline">最多 32 个</span></legend>
+      <p class="form-hint">新建终端时可直接选择这些目录，也可以输入其他路径。</p><div id="directory-rows"></div>
+      <button type="button" class="text-button add-directory" id="add-directory">${icon('plus')} 添加工作目录</button>
+    </fieldset><div class="form-error" role="alert"></div><div class="modal-actions"><button type="button" class="secondary" data-cancel>取消</button><button type="submit" class="primary">保存分组</button></div>`, data => {
+    updateGroup(workspace, String(data.get('name')), data.getAll('directory').map(String), existing);
     renderList(); renderHeader(); persist();
   });
+  const rows = $('directory-rows');
+  const updateRows = () => {
+    rows.querySelectorAll('input').forEach((input, index) => input.setAttribute('aria-label', `工作目录 ${index + 1}`));
+    $<HTMLButtonElement>('add-directory').disabled = rows.children.length >= 32;
+  };
+  const addDirectory = (path = '') => {
+    if (rows.children.length >= 32) return;
+    const row = document.createElement('div'); row.className = 'directory-row';
+    const input = document.createElement('input'); input.name = 'directory'; input.value = path; input.placeholder = '输入工作目录路径'; input.autocomplete = 'off'; input.spellcheck = false;
+    const remove = button('移除工作目录', 'close', () => { row.remove(); updateRows(); }); remove.type = 'button';
+    row.append(input, remove); rows.append(row); updateRows(); return input;
+  };
+  const paths = existing ? directoriesFor(workspace, existing) : [];
+  for (const path of paths.length ? paths : ['']) addDirectory(path);
+  $('add-directory').onclick = () => addDirectory()?.focus();
   const input = form.elements.namedItem('name') as HTMLInputElement; input.value = existing ?? ''; input.focus();
 }
 
@@ -427,9 +465,9 @@ async function control(request: ControlRequest): Promise<unknown> {
   if (request.action === 'list') return workspace.terminals.map(t => ({ ...t, status: runtimes.get(t.id)?.status ?? 'stopped', pid: runtimes.get(t.id)?.pid }));
   if (request.action === 'new') {
     if (workspace.terminals.length >= 128) throw new Error('最多保留 128 个终端');
-    const terminal: TerminalDefinition = { id: crypto.randomUUID(), name: String(args.name || 'Terminal').slice(0, 120), group: String(args.group || defaultGroup).slice(0, 80),
+    const terminal: TerminalDefinition = { id: crypto.randomUUID(), name: String(args.name || 'Terminal').slice(0, 120), group: String(args.group ?? defaultGroup).trim().slice(0, 80),
       tags: tagsFrom(Array.isArray(args.tags) ? args.tags.map(String) : []), cwd: String(args.cwd || defaults.cwd), shell: String(args.shell || defaults.shell) };
-    if (!workspace.groups.includes(terminal.group)) workspace.groups.push(terminal.group);
+    if (terminal.group && !workspace.groups.includes(terminal.group)) workspace.groups.push(terminal.group);
     workspace.terminals.push(terminal); selectTerminal(terminal.id); await startTerminal(terminal); await flushSave(); return terminal;
   }
   const definition = resolveTerminal(workspace.terminals, String(args.id));
@@ -447,8 +485,8 @@ async function control(request: ControlRequest): Promise<unknown> {
     case 'focus': selectTerminal(definition.id); await invoke('focus_window'); break;
     case 'rename': { const name = String(args.name || '').trim(); if (!name) throw new Error('名称不能为空'); definition.name = name.slice(0, 120); break; }
     case 'tag': definition.tags = tagsFrom(Array.isArray(args.tags) ? args.tags.map(String) : []); break;
-    case 'group': definition.group = String(args.name || '').trim().slice(0, 80) || defaultGroup;
-      if (!workspace.groups.includes(definition.group)) workspace.groups.push(definition.group); break;
+    case 'group': definition.group = String(args.name ?? '').trim().slice(0, 80);
+      if (definition.group && !workspace.groups.includes(definition.group)) workspace.groups.push(definition.group); break;
     case 'send': {
       if (runtimes.get(definition.id)?.status !== 'running') throw new Error('终端没有运行');
       await invoke('write_terminal', { id: runtimes.get(definition.id)!.runId, data: String(args.text ?? '') + (args.enter ? '\r' : '') }); break;
