@@ -156,7 +156,11 @@ pub fn resolve_cwd(cwd: &str) -> Result<PathBuf, String> {
     if !path.is_dir() {
         return Err(format!("目录不存在：{}", path.display()));
     }
-    path.canonicalize().map_err(|e| e.to_string())
+    // std::fs::canonicalize adds a verbatim \\?\ prefix on Windows. Passing
+    // that as the shell's cwd breaks CMD and .bat/.cmd launched by PowerShell.
+    // dunce keeps ordinary paths shell-compatible, preserving verbatim paths
+    // only when removing the prefix would change their meaning.
+    dunce::canonicalize(path).map_err(|e| e.to_string())
 }
 
 impl Terminals {
@@ -313,6 +317,44 @@ impl Terminals {
 mod tests {
     use super::*;
     use std::{sync::mpsc, time::Duration};
+
+    #[cfg(windows)]
+    #[test]
+    fn powershell_can_launch_batch_in_resolved_directory() {
+        let directory = std::env::temp_dir().join(format!("tm cwd 中文 {}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&directory).unwrap();
+        std::fs::write(directory.join("cwd-marker.txt"), "marker").unwrap();
+        std::fs::write(
+            directory.join("verify-cwd.cmd"),
+            "@echo off\r\nif not exist cwd-marker.txt exit /b 17\r\necho TM_BATCH_CWD_OK\r\n",
+        )
+        .unwrap();
+        // Also cover a verbatim path already saved by an older app version.
+        let verbatim = directory.canonicalize().unwrap();
+        let resolved = resolve_cwd(verbatim.to_str().unwrap()).unwrap();
+        let ordinary = !resolved.to_string_lossy().starts_with(r"\\?\");
+        let output = std::process::Command::new("powershell.exe")
+            .args([
+                "-NoLogo",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                ".\\verify-cwd.cmd; exit $LASTEXITCODE",
+            ])
+            .current_dir(&resolved)
+            .output();
+        std::fs::remove_dir_all(&directory).unwrap();
+        assert!(
+            ordinary,
+            "shell cwd must use an ordinary DOS path: {resolved:?}"
+        );
+        let output = output.unwrap();
+        assert!(output.status.success(), "batch failed: {output:?}");
+        assert!(
+            String::from_utf8_lossy(&output.stdout).contains("TM_BATCH_CWD_OK"),
+            "batch lost its working directory: {output:?}"
+        );
+    }
 
     #[test]
     fn flow_blocks_at_limit_and_close_wakes_reader() {
