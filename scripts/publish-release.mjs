@@ -10,6 +10,7 @@ if (!token || !repository || !/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag ??
   throw new Error('Missing or invalid release environment');
 }
 const assets = [];
+const prerelease = version.includes('-');
 for (const target of targets) {
   const manifest = JSON.parse(await readFile(path.join(directory, `manifest-${target}.json`), 'utf8'));
   if (manifest.target !== target || manifest.version !== version || manifest.commit !== commit) throw new Error(`Mismatched build: ${target}`);
@@ -45,11 +46,16 @@ const existing = await fetch(`${base}/releases/tags/${encodeURIComponent(tag)}`,
 if (existing.ok) {
   release = await existing.json();
   if (!release.draft) throw new Error('Release already published; refusing to replace public assets. Use a new version tag.');
+  if (release.prerelease !== prerelease) {
+    release = await request(`${base}/releases/${release.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prerelease }),
+    });
+  }
 } else if (existing.status === 404) {
   release = await request(`${base}/releases`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tag_name: tag, target_commitish: commit, name: `Terminal Manager ${tag}`, draft: true,
-      prerelease: true, make_latest: 'false', body: `## Terminal Manager ${tag}\n\nBuild commit: ${commit}\n\n- Windows x64: setup.exe installer\n- macOS Apple Silicon / Intel: separate DMG installers\n- Linux x64: AppImage and DEB\n- tmctl: separate CLI archives for each target\n- Verify downloads with SHA256SUMS.txt\n\nThis is a draft prerelease. Native builds and automated tests completed; keyboard, IME, clipboard and AI CLI interactions still need manual validation on each platform.\n\nmacOS packages are ad-hoc signed, not Apple notarized. Windows installers are not code-signed. Review the assets and release notes before publishing.` }),
+      prerelease, make_latest: 'false', body: `## Terminal Manager ${tag}\n\nBuild commit: ${commit}\n\n- Windows x64: setup.exe installer\n- macOS Apple Silicon / Intel: separate DMG installers\n- Linux x64: AppImage and DEB\n- tmctl: separate CLI archives for each target\n- Verify downloads with SHA256SUMS.txt\n\nThis is a draft ${prerelease ? 'prerelease' : 'release'}. Native builds and automated tests completed; keyboard, IME, clipboard and AI CLI interactions still need manual validation on each platform.\n\nmacOS packages are ad-hoc signed, not Apple notarized. Windows installers are not code-signed. Review the assets and release notes before publishing.` }),
   });
 } else {
   throw new Error(`Cannot look up release: HTTP ${existing.status}`);
@@ -67,4 +73,4 @@ for (const name of assets) {
   console.log(`Uploaded ${name}`);
 }
 console.log(`Draft ready: ${release.html_url}`);
-if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Release draft\n\n[Review ${tag}](${release.html_url})\n\nAll four targets uploaded. The release remains a draft prerelease; publish it manually after validation.\n`);
+if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Release draft\n\n[Review ${tag}](${release.html_url})\n\nAll four targets uploaded. The release remains a draft ${prerelease ? 'prerelease' : 'release'}; publish it manually after validation.\n`);

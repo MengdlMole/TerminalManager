@@ -134,7 +134,7 @@ jobs:
           pattern: release-*
           path: release-assets
           merge-multiple: true
-      - name: Verify all platforms and upload to a draft prerelease
+      - name: Verify all platforms and upload to a release draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/publish-release.mjs

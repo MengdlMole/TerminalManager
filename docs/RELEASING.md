@@ -14,7 +14,7 @@
    ```
 
 4. 在仓库 Actions → Build release draft 查看进度。标签必须存在、指向本次检出的提交，并与所有版本文件一致；版本不匹配不会创建 Release。
-5. 四个原生构建全部成功后，汇总并验证 SHA-256，自动创建 **Draft + Pre-release**；不自动公开发布。
+5. 四个原生构建全部成功后，汇总并验证 SHA-256，自动创建 **Draft**。普通版本标签（如 `v1.0.1`）不勾选 Pre-release；带预发布后缀的标签（如 `v1.1.0-beta.1`）勾选 Pre-release。不自动公开发布。
 6. 到 Releases 打开草稿，下载验证需要的安装包、补充更新说明后，点击 Publish release。
 
 也可以在 Actions 页面手动 Run workflow，输入一个**已存在的版本标签**。这适合重试失败构建，不会在 main 上直接创建任意版本。
