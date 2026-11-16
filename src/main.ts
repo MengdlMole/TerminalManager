@@ -5,7 +5,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
 import '@xterm/xterm/css/xterm.css';
 import './style.css';
-import { defaultGroup, directoriesFor, emptyWorkspace, matches, normalizeWorkspace, resolveTerminal, tagsFrom, updateGroup, type TerminalDefinition } from './model';
+import { defaultGroup, directoriesFor, emptyWorkspace, matches, normalizeWorkspace, removeGroup, resolveTerminal, tagsFrom, updateGroup, type TerminalDefinition } from './model';
 import { icon } from './icons';
 import { combobox } from './combobox';
 
@@ -349,7 +349,7 @@ function terminalDialog(definition?: TerminalDefinition, group?: string, copy?: 
     });
   const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement;
   field('name').value = definition?.name ?? (copy ? `${copy.name} 副本` : `Terminal ${workspace.terminals.length + 1}`);
-  let selectedGroup = group ?? source?.group ?? activeDefinition()?.group ?? defaultGroup;
+  let selectedGroup = group ?? source?.group ?? activeDefinition()?.group ?? workspace.groups[0] ?? '';
   const cwdPicker = combobox($('cwd-picker'), {
     id: 'terminal-cwd', name: 'cwd', label: '工作目录', required: true,
     value: source?.cwd ?? directoriesFor(workspace, selectedGroup)[0] ?? defaults.cwd,
@@ -382,7 +382,7 @@ function groupDialog(existing?: string): void {
     <fieldset class="directory-editor"><legend>工作目录<span class="optional-inline">最多 32 个</span></legend>
       <p class="form-hint">新建终端时可直接选择这些目录，也可以输入其他路径。</p><div id="directory-rows"></div>
       <button type="button" class="text-button add-directory" id="add-directory">${icon('plus')} 添加工作目录</button>
-    </fieldset><div class="form-error" role="alert"></div><div class="modal-actions"><button type="button" class="secondary" data-cancel>取消</button><button type="submit" class="primary">保存分组</button></div>`, data => {
+    </fieldset><div class="form-error" role="alert"></div><div class="modal-actions">${existing ? '<button type="button" class="danger delete-group" id="delete-group">删除分组</button>' : ''}<button type="button" class="secondary" data-cancel>取消</button><button type="submit" class="primary">保存分组</button></div>`, data => {
     updateGroup(workspace, String(data.get('name')), data.getAll('directory').map(String), existing);
     renderList(); renderHeader(); persist();
   });
@@ -401,6 +401,12 @@ function groupDialog(existing?: string): void {
   const paths = existing ? directoriesFor(workspace, existing) : [];
   for (const path of paths.length ? paths : ['']) addDirectory(path);
   $('add-directory').onclick = () => addDirectory()?.focus();
+  if (existing) $('delete-group').onclick = () => {
+    confirmDialog('删除分组？', `删除“${existing}”及其常用目录记录，其中的终端会移到「未分组」并继续运行。`, '删除分组', async () => {
+      removeGroup(workspace, existing);
+      renderList(); renderHeader(); renderEmpty(); await flushSave();
+    });
+  };
   const input = form.elements.namedItem('name') as HTMLInputElement; input.value = existing ?? ''; input.focus();
 }
 

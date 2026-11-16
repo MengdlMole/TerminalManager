@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultGroup, directoriesFor, emptyWorkspace, normalizeWorkspace, matches, resolveTerminal, tagsFrom, updateGroup } from '../src/model.ts';
+import { defaultGroup, directoriesFor, emptyWorkspace, normalizeWorkspace, matches, removeGroup, resolveTerminal, tagsFrom, updateGroup } from '../src/model.ts';
 
 const terminal = { id: 'abcdef-123', name: '后端开发', group: '工作', tags: ['urgent', 'API'], cwd: '/tmp/project', shell: '/bin/zsh' };
 
@@ -41,7 +41,8 @@ test('older workspaces load without directory metadata and ungrouped terminals s
   const restored = normalizeWorkspace(JSON.parse(JSON.stringify(workspace)));
   assert.equal(restored.terminals[1].group, '');
   assert.ok(!restored.groups.includes(''));
-  assert.ok(restored.groups.includes(defaultGroup));
+  assert.deepEqual(restored.groups, ['工作']);
+  assert.ok(normalizeWorkspace({ version: 1, terminals: [] }).groups.includes(defaultGroup));
   assert.deepEqual(restored.collapsed, ['']);
   assert.ok(matches(restored.terminals[1], '未分组'));
 });
@@ -64,4 +65,33 @@ test('default group directories are editable and unknown directory metadata is d
   const restored = normalizeWorkspace({ ...workspace, groupDirectories: { ...workspace.groupDirectories, orphan: ['/tmp/stale'] } });
   assert.deepEqual(directoriesFor(restored, defaultGroup), ['/tmp/default']);
   assert.deepEqual(directoriesFor(restored, 'orphan'), []);
+});
+
+test('deleting a populated group preserves terminals and selection across reload', () => {
+  const workspace = normalizeWorkspace({ ...emptyWorkspace(), terminals: [terminal], activeId: terminal.id, collapsed: ['工作', ''] });
+  updateGroup(workspace, '工作', ['/tmp/project'], '工作');
+  const original = workspace.terminals[0];
+  removeGroup(workspace, '工作');
+  assert.equal(workspace.terminals[0], original);
+  assert.deepEqual(original, { ...terminal, group: '' });
+  const restored = normalizeWorkspace(JSON.parse(JSON.stringify(workspace)));
+  assert.equal(restored.activeId, terminal.id);
+  assert.equal(restored.terminals[0].group, '');
+  assert.ok(!restored.groups.includes('工作'));
+  assert.ok(!Object.hasOwn(restored.groupDirectories, '工作'));
+  assert.ok(!restored.collapsed.includes('工作'));
+});
+
+test('default and empty groups can be deleted without reappearing on reload', () => {
+  const workspace = emptyWorkspace();
+  workspace.terminals.push({ ...terminal, group: defaultGroup });
+  updateGroup(workspace, '空分组', ['/tmp/empty']);
+  removeGroup(workspace, defaultGroup);
+  assert.deepEqual(workspace.groups, ['空分组']);
+  assert.deepEqual(directoriesFor(workspace, '空分组'), ['/tmp/empty']);
+  removeGroup(workspace, '空分组');
+  const restored = normalizeWorkspace(JSON.parse(JSON.stringify(workspace)));
+  assert.deepEqual(restored.groups, []);
+  assert.equal(restored.terminals.length, 1);
+  assert.equal(restored.terminals[0].group, '');
 });

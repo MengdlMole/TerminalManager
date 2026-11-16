@@ -52,6 +52,18 @@ export function updateGroup(workspace: Workspace, name: string, directories: str
   workspace.groupDirectories = { ...workspace.groupDirectories, [name]: directoriesFrom(directories) };
 }
 
+export function removeGroup(workspace: Workspace, name: string): void {
+  if (!workspace.groups.includes(name)) throw new Error('分组不存在');
+  workspace.groups = workspace.groups.filter(group => group !== name);
+  workspace.collapsed = workspace.collapsed.filter(group => group !== name);
+  let moved = false;
+  for (const terminal of workspace.terminals) {
+    if (terminal.group === name) { terminal.group = ''; moved = true; }
+  }
+  if (moved) workspace.collapsed = workspace.collapsed.filter(group => group !== '');
+  delete workspace.groupDirectories[name];
+}
+
 export function normalizeWorkspace(input: unknown): Workspace {
   if (!input || typeof input !== 'object') throw new Error('配置格式无效');
   const value = input as Record<string, unknown>;
@@ -71,8 +83,8 @@ export function normalizeWorkspace(input: unknown): Workspace {
       cwd: terminal.cwd as string, shell: terminal.shell as string,
       tags: Array.isArray(terminal.tags) ? tagsFrom(terminal.tags.filter((t): t is string => typeof t === 'string')) : [] };
   });
-  workspace.groups = [...new Set([defaultGroup,
-    ...(Array.isArray(value.groups) ? value.groups.filter((g): g is string => typeof g === 'string' && !!g.trim()).map(g => g.slice(0, 80)) : []),
+  workspace.groups = [...new Set([
+    ...(Array.isArray(value.groups) ? value.groups.filter((g): g is string => typeof g === 'string' && !!g.trim()).map(g => g.slice(0, 80)) : [defaultGroup]),
     ...workspace.terminals.map(t => t.group).filter(Boolean)])];
   const directories = value.groupDirectories && typeof value.groupDirectories === 'object'
     ? value.groupDirectories as Record<string, unknown> : {};
